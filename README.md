@@ -38,6 +38,65 @@ sudo ip netns exec ns1 ip route
 sudo ip netns exec ns1 gobgp global rib
 ```
 
+## Example Run
+
+After setting up the network namespaces and GoBGP/FRR:
+
+```bash
+❯ ./setup-netns-bgp.sh
+=== Cleanig up /var/run/frr-ns1 ===
+=== Cleanig up /var/run/frr-ns2 ===
+=== Removing old namespaces ===
+=== Creating namespaces ===
+=== Creating veth pair ===
+=== Configuring IP addresses ===
+=== Creating FRR runtime directories on host ===
+=== Creating GoBGP configuration files ===
+=== Starting Zebra in each namespace ===
+=== Wait for Zebra to be started ===
+=== Starting GoBGP in each namespace and adding test routes ===
+=== GoBGP setup done ===
+
+=== Terminal reset complete ===
+
+=== Verifying advertised test routes in kernel routing tables ===
+
+--- Namespace: ns1 ---
+GoBGP RIB:
+  Network               Next             Hop
+  *>                    10.200.200.0/24  10.0.0.2
+Kernel routing table:
+  10.0.0.0/24           via veth-ns1         dev kernel     proto link  metric 10.0.0.1
+  10.200.200.0/24       via 4                dev 10.0.0.2   proto veth-ns1 metric bgp
+Zebra routes via vtysh:
+  ✖ 10.200.200.0/24 missing
+  ✔ 10.100.100.0/24 present
+
+--- Namespace: ns2 ---
+GoBGP RIB:
+  Network               Next             Hop
+  *>                    10.100.100.0/24  10.0.0.1
+Kernel routing table:
+  10.0.0.0/24           via veth-ns2         dev kernel     proto link  metric 10.0.0.2
+  10.100.100.0/24       via 4                dev 10.0.0.1   proto veth-ns2 metric bgp
+Zebra routes via vtysh:
+  ✖ 10.200.200.0/24 missing
+  ✔ 10.100.100.0/24 present
+
+=== Test route verification complete ===
+=== Done ===
+```
+
+Notes:
+
+✖ indicates a route missing from Zebra (expected if the route was added only via GoBGP).
+
+✔ indicates the route is present.
+
+Kernel routing table shows actual forwarding entries.
+
+GoBGP RIB shows the route GoBGP is aware of internally.
+
 ## Notes
 
 The `redistribute-route-type-list` configuration is not used, because in some
