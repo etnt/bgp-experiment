@@ -172,7 +172,7 @@ Zebra setups it causes connection issues.
 
 The BGP session remains active as long as the namespaces exist.
 
-To clean up:
+To clean up manually:
 
 ```bash
 sudo ip netns del ns1
@@ -180,3 +180,9 @@ sudo ip netns del ns2
 ```
 
 This will remove all interfaces, routes, and running daemons.
+
+Check with:
+
+```bash
+sudo ip netns list
+```
