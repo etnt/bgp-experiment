@@ -80,8 +80,33 @@ sudo chmod 755 $FRR_DIR1 $FRR_DIR2
 
 echo "=== Creating GoBGP configuration files ==="
 mkdir -p $GOBGP_DIR1 $GOBGP_DIR2
-# Here you would write the gobgp.yaml files into ns1/ and ns2/ directories
-# (keep your previous working config that doesn’t include 'redistribute-route-type-list')
+
+# Create GoBGP configuration file for ns1
+cat > ns1/gobgp.yaml <<'EOF'
+global:
+  config:
+    as: 65001
+    router-id: 192.0.2.1
+
+zebra:
+  config:
+    enabled: true
+    url: unix:/var/run/frr-ns1/zserv.api
+EOF
+
+# Create GoBGP configuration file for ns2
+cat > ns2/gobgp.yaml <<'EOF'
+global:
+  config:
+    as: 65002
+    router-id: 192.0.2.2
+
+zebra:
+  config:
+    enabled: true
+    url: unix:/var/run/frr-ns2/zserv.api
+EOF
+
 
 echo "=== Starting Zebra in each namespace ==="
 sudo ip netns exec $NS1 /usr/lib/frr/zebra -d \

@@ -1,19 +1,31 @@
-# Linux Namespace BGP Setup with GoBGP and Zebra
+# BGP Route Advertisement with Linux Namespaces, GoBGP, and FRR
 
-This repository provides a simple example to experiment with BGP route advertisement using Linux namespaces, GoBGP (`gobgpd`), and Zebra (`FRR`).  
+This repository provides a simple, hands-on environment to experiment with **BGP route advertisement** using Linux namespaces, **GoBGP** (`gobgpd`), and **FRR/Zebra**. The goal is to demonstrate how BGP routes can be advertised between nodes, installed in the kernel routing table, and optionally verified via Zebra.
 
-The setup simulates a small network with two nodes (`ns1` and `ns2`) connected via a virtual Ethernet (veth) link.
+The setup simulates a minimal network with **two nodes** (`ns1` and `ns2`) connected via a virtual Ethernet (veth) link.
 
-## Files
+## Purpose
 
-- `setup-netns-bgp.sh`: Bash script that:
-  1. Creates two Linux namespaces (`ns1` as manager, `ns2` as worker).
-  2. Connects them via a veth pair with IPs `10.0.0.1` (ns1) and `10.0.0.2` (ns2).
-  3. Starts Zebra in each namespace for route installation.
-  4. Starts `gobgpd` in each namespace with BGP peering between ns1 and ns2.
-  5. Advertises a test route (`10.200.200.0/24`) from ns2 to ns1.
-  6. Displays learned routes in ns1.
+- Learn how GoBGP can advertise routes between isolated network namespaces.
+- Observe how routes propagate into the **kernel routing table**.
+- Understand the role of Zebra in managing and verifying BGP-installed routes.
 
+## How It Works
+
+1. **Namespace creation**: Two Linux namespaces (`ns1` as manager, `ns2` as worker) are created.
+2. **Virtual link**: Namespaces are connected via a veth pair with IPs `10.0.0.1` (`ns1`) and `10.0.0.2` (`ns2`).
+3. **Zebra setup**: Zebra is started in each namespace to manage kernel route installation.
+4. **GoBGP setup**: `gobgpd` is started in each namespace with BGP peering between `ns1` and `ns2`.
+5. **Route advertisement**: A test route (`10.200.200.0/24`) is advertised from `ns2` to `ns1`.
+
+## Verifying the Result
+
+After the script runs:
+
+- The **GoBGP RIB** in each namespace shows the advertised routes.
+- The **kernel routing table** confirms that routes have been installed correctly.
+- Zebra can optionally be queried to verify which BGP routes are present in the kernel.
+- The script provides a **fancy verification output** marking each route as present (`✔`) or missing (`✖`) for easy inspection.
 - `ns1/gobgp.yaml` and `ns2/gobgp.yaml`: GoBGP configuration files used by the script.
 
 ## Requirements
@@ -21,6 +33,39 @@ The setup simulates a small network with two nodes (`ns1` and `ns2`) connected v
 - Linux with `iproute2` (for namespaces and veth interfaces).
 - GoBGP (`gobgpd`) installed.
 - FRR (`zebra`) installed.
+
+## More details
+
+**GoBGP RIB:** This shows the routes that GoBGP knows internally, including
+routes learned from peers and locally advertised routes. Think of it as
+GoBGP’s “route database” before the system actually uses them to forward packets.
+
+RIB stands for Routing Information Base. In the context of GoBGP (and most
+BGP implementations):
+
+  * RIB is the internal table where a BGP speaker stores all the routes it
+    learns from its peers or generates locally.
+
+  * It is essentially a database of routes, before any selection rules are
+    applied to install routes into the kernel or forward packets.
+
+  * There are typically two main RIBs in BGP systems:
+
+    1. Adj-RIB-In: routes learned from BGP peers.
+
+    2. Loc-RIB: routes that have been processed and selected as best paths
+       (the “active” routes).
+
+So when your script shows GoBGP RIB:, it’s displaying the routes that GoBGP
+knows about internally, including both locally advertised routes and those
+received from its peer.
+
+**Kernel routing table:** These are the routes that the Linux kernel is using
+for actual packet forwarding. In our case it shows which routes actually made
+it into the system’s IP stack for packet forwarding, via the GoBGP advertisment.
+
+**Zebra routes via vtysh:** Shows which routes FRR’s Zebra has installed or
+knows about.
 
 ## How to Run
 
