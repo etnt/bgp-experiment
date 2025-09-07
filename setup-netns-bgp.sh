@@ -27,8 +27,11 @@ sudo ip netns exec ns2 ip link set lo up
 
 echo "=== Creating FRR runtime directories ==="
 sudo mkdir -p /var/run/frr-ns1 /var/run/frr-ns2
+sudo chown root:root /var/run/frr-ns1 /var/run/frr-ns2
+sudo chmod 755 /var/run/frr-ns1 /var/run/frr-ns2
 
 echo "=== Creating GoBGP configuration files ==="
+mkdir -p ns1
 cat > ns1/gobgp.yaml <<'EOF'
 global:
   config:
@@ -41,6 +44,7 @@ zebra:
     url: unix:/var/run/frr-ns1/zserv.api
 EOF
 
+mkdir -p ns2
 cat > ns2/gobgp.yaml <<'EOF'
 global:
   config:
