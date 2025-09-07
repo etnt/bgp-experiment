@@ -51,9 +51,9 @@ BGP implementations):
 
   * There are typically two main RIBs in BGP systems:
 
-    1. Adj-RIB-In: routes learned from BGP peers.
+    1. **Adj-RIB-In:** routes learned from BGP peers.
 
-    2. Loc-RIB: routes that have been processed and selected as best paths
+    2. **Loc-RIB:** routes that have been processed and selected as best paths
        (the “active” routes).
 
 So when your script shows GoBGP RIB:, it’s displaying the routes that GoBGP
@@ -69,12 +69,22 @@ knows about.
 
 ## How to Run
 
+**Script Options:**
+
+  **--inspect:** Pause the script after namespaces and veth setup,
+                 before starting Zebra, allowing you to inspect the
+                 routing tables manually. Press Enter to continue.
+
+  **--clean:** Remove all created namespaces and cleanup runtime directories
+               without running the full setup.
+
 ```bash
 chmod +x setup-netns-bgp.sh
 ./setup-netns-bgp.sh
 ```
 
-After running the script, ns1 will learn the test route 10.200.200.0/24 via BGP.
+After running the script, ns1 will learn the test route 10.200.200.0/24 via
+BGP, and ns2 will learn the test route 10.100.100.0/24.
 
 You can inspect the route table inside the namespace:
 
@@ -82,10 +92,23 @@ You can inspect the route table inside the namespace:
 sudo ip netns exec ns1 ip route
 sudo ip netns exec ns1 gobgp global rib
 ```
+### Optional Inspection Mode
+
+You can pause the script after the namespaces are created but before starting
+Zebra and GoBGP, to inspect the network state:
+
+```bash
+./setup-netns-bgp.sh --inspect
+...
+=== INSPECTION PAUSE ===
+The namespaces are set up. You can inspect the routing tables now:
+  sudo ip netns exec ns1 ip route
+  sudo ip netns exec ns2 ip route
+Press RETURN to continue and start Zebra...
+...
+```
 
 ## Example Run
-
-After setting up the network namespaces and GoBGP/FRR:
 
 ```bash
 ❯ ./setup-netns-bgp.sh

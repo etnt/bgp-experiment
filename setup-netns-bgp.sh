@@ -16,6 +16,38 @@ GOBGP_DIR2=ns2
 GOBGP_LOG_NS1="ns1/gobgp.log"
 GOBGP_LOG_NS2="ns2/gobgp.log"
 
+CLEAN_ONLY=0
+INSPECT_BEFORE_ZEBRA=0
+
+# Parse options
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --clean)
+            CLEAN_ONLY=1
+            shift
+            ;;
+        --inspect)
+            INSPECT_BEFORE_ZEBRA=1
+            shift
+            ;;
+        *)
+            shift
+            ;;
+    esac
+done
+
+cleanup() {
+    echo "=== Removing old namespaces ==="
+    sudo ip netns del ns1 2>/dev/null || true
+    sudo ip netns del ns2 2>/dev/null || true
+    echo "=== Clean up done ==="
+}
+
+if [[ $CLEAN_ONLY -eq 1 ]]; then
+    cleanup
+    exit 0
+fi
+
 # Wait for Zebra socket to be ready
 wait_for_zebra() {
     local ns="$1"
@@ -107,6 +139,16 @@ zebra:
     url: unix:/var/run/frr-ns2/zserv.api
 EOF
 
+# Optional: pause for educational inspection
+if [ "$INSPECT_BEFORE_ZEBRA" = "1" ]; then
+    echo
+    echo "=== INSPECTION PAUSE ==="
+    echo "The namespaces are set up. You can inspect the routing tables now:"
+    echo "  sudo ip netns exec ns1 ip route"
+    echo "  sudo ip netns exec ns2 ip route"
+    echo "Press RETURN to continue and start Zebra..."
+    read -r
+fi
 
 echo "=== Starting Zebra in each namespace ==="
 sudo ip netns exec $NS1 /usr/lib/frr/zebra -d \
