@@ -155,15 +155,52 @@ Zebra routes via vtysh:
 === Done ===
 ```
 
-Notes:
+How to interpret the displayed result:
 
-✖ indicates a route missing from Zebra (expected if the route was added only via GoBGP).
+**1. GoBGP RIB**
 
-✔ indicates the route is present.
+This is GoBGP’s own Routing Information Base (RIB).
+It shows the BGP routes that GoBGP has learned (from peers or via config)
+and is ready to install in the kernel or pass to Zebra.
 
-Kernel routing table shows actual forwarding entries.
+In our case:
+```
+*> 10.200.200.0/24  10.0.0.2
+```
 
-GoBGP RIB shows the route GoBGP is aware of internally.
+means: "GoBGP has a best path (*>) to 10.200.200.0/24 via next-hop 10.0.0.2".
+
+**2. Kernel routing table (ip route)**
+
+This shows what Linux itself has in its FIB (Forwarding Information Base).
+After GoBGP passes the route to Zebra, and Zebra programs it into the kernel,
+you see it here.
+
+Example:
+```
+10.200.200.0/24 nhid 4 via 10.0.0.2 dev veth-ns1 proto bgp metric 20
+```
+
+means the Linux kernel is ready to forward packets to 10.200.200.0/24 via
+10.0.0.2 using veth-ns1.
+
+**What Zebra shows**
+
+In ns1’s Zebra:
+
+It should see routes received from ns2 (i.e. 10.100.100.0/24), not its
+own advertised prefix.
+
+That’s why 10.100.100.0/24 shows up as ✔ present in vtysh.
+
+But 10.200.200.0/24 is ns1’s own advertisement — it never appears as
+an “imported” route in its local Zebra.
+
+In ns2’s Zebra:
+
+The reverse is true: it shows 10.200.200.0/24 (learned from ns1) if the
+peering exchange works, but not its own 10.100.100.0/24.
+
 
 ## Notes
 
